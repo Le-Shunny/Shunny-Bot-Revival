@@ -1,0 +1,48 @@
+const axios = global.nodemodule["axios"];
+const fs = global.nodemodule["fs-extra"];
+
+module.exports.config = {
+    name: "guns",
+    version: "1.0.0",
+    hasPermssion: 0,
+    credits: "Cypruspro21k",
+    description: "Fetches random gun images and descriptions",
+    commandCategory: "blue prints",
+    usages: "send message",
+    cooldowns: 5,
+    dependencies: {
+        "axios": ""
+    }
+};
+
+module.exports.run = async ({ api, event }) => {
+    try {
+        const apiResponse = await axios.get('https://api.falthenjaner.repl.co/datealive');
+        const gunsData = apiResponse.data;
+
+        const randomIndex = Math.floor(Math.random() * gunsData.length);
+        const randomGun = gunsData[randomIndex];
+
+        const imageUrl = randomGun.imageUrl;
+        const description = randomGun.description;
+        const credits = randomGun.credits;
+
+        const messageBody = `🔫 Gun Blueprint 🔫\nCredits: ${credits}`;
+
+        const callback = () => api.sendMessage({
+            body: messageBody,
+            attachment: fs.createReadStream(__dirname + "/cache/gun1.jpg")
+        }, event.threadID, () => fs.unlinkSync(__dirname + "/cache/gun1.jpg"), event.messageID);
+
+        await axios({
+            url: encodeURI(imageUrl),
+            method: 'GET',
+            responseType: 'stream'
+        }).then(response => {
+            response.data.pipe(fs.createWriteStream(__dirname + "/cache/gun1.jpg")).on("close", () => callback());
+        });
+    } catch (error) {
+        console.error("Error fetching data from the API:", error);
+        api.sendMessage("Failed to fetch gun images. Please try again later.", event.threadID);
+    }
+};
